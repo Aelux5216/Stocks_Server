@@ -1,0 +1,49 @@
+
+        if response != None:
+            commandSizeBytes = commandSizeArray
+            copy.deepcopy(data, 0, commandSizeArray)
+            commandSize = int(commandSizeArray,0)
+
+            command = ""
+
+            if commandSize == 7:
+                commandBytes = commandSize
+                copy.deepcopy(data, commandSizeArray, commandBytes, 0, commandSize)
+                command = int.from_bytes(commandBytes)
+                command.rstrip('\0')
+
+                print("Command is {0}", command)
+
+                dataSizeBytes = dataSizeArray
+                copy.deepcopy(data, commandSizeArray + commandSize, dataSizeBytes, 0, dataSizeArray)
+                dataSize = int.from_bytes(dataSizeBytes,0)
+
+                print("Size of data is:{0}",dataSize)
+
+                if command == "Message":
+                    response = bytes("{}: {}".format(cur_thread.name, data), 'ascii')
+                    self.request.sendall(response)#Send message to client 2 if one is connected 
+                    #else tell the client that is sending message that there is no second client
+                    pass
+                elif "Maths" in comamand:
+
+                    if "+" in data:
+                        #Do plus maths, write to file,send contents of both calc to both clients 
+                        self.send(data)
+                        pass
+                    elif "-" in data:
+                        #Do minus maths, write to file and send contents of both calc to both clients
+                        pass
+                    elif "/" in data:
+                        #Do divide maths, write to file and send contents of both calc to both cients 
+                        pass
+                    elif "*" in data:
+                        #Do multiplication maths, write to file and send contents of both calc to both cients
+                        pass
+                    else:
+                        #Invalid operation error
+                        pass
+                else:
+                        #Error
+                        #Disconnect client
+                        pass
