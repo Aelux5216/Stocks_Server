@@ -1,6 +1,7 @@
 import asyncore
 import socket
 import copy
+import cx_Oracle
 
 command = ""
 commandSize = 0
@@ -8,6 +9,7 @@ dataSize = 0
 
 commandSizeArray = 7
 dataSizeArray = 50
+
 
 
 class EchoHandler(asyncore.dispatcher_with_send):
