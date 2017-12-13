@@ -1,7 +1,7 @@
 import asyncore
 import socket
 import copy
-import cx_Oracle
+import cx_Oracle as cx_Oracle
 
 command = ""
 commandSize = 0
@@ -10,7 +10,15 @@ dataSize = 0
 commandSizeArray = 7
 dataSizeArray = 50
 
+testsym = "Bob"
+testcomp = "Bobbers"
+testprice = 120.33
+testquant = 100
 
+connection = cx_Oracle.connect('SYSTEM/12345@xe')
+cursor = connection.cursor()
+query = str.format("INSERT INTO DATABASE (SYMBOL, COMPANY, PRICE, QUANTITY) VALUES ({0}, {1}, {2}, {3}",testsym,testcomp,testprice,testquant)
+cursor.execute(query)
 
 class EchoHandler(asyncore.dispatcher_with_send):
 
