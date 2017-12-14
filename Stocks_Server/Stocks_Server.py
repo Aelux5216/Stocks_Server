@@ -3,12 +3,6 @@ import socket
 import copy
 import cx_Oracle
 
-command = ""
-commandSize = 0
-dataSize = 0
-
-commandSizeArray = 7
-dataSizeArray = 50
 #Test data
 testsym = "Bob"
 testcomp = "Bobbers"
@@ -28,7 +22,8 @@ class EchoHandler(asyncore.dispatcher_with_send):
     def handle_read(self):
         data = self.recv(8192)
         if data:
-            self.send(data)
+            data2 = data.decode('ascii')
+            self.send(data2)
         else:
             pass
 
