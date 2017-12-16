@@ -22,8 +22,13 @@ class EchoHandler(asyncore.dispatcher_with_send):
     def handle_read(self):
         data = self.recv(8192)
         if data:
-            data2 = data.decode('ascii')
-            self.send(data2)
+            if data == "RequestDB":
+                query = "SELECT * FROM DATABASE"
+                database = cursor.execute(query)
+                self.send(database.encode())
+            else:
+                data2 = data.decode('ascii')
+                self.send(data2)
         else:
             pass
 
