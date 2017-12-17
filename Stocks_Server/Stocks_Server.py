@@ -20,7 +20,7 @@ connection.commit() #Save changes to the database
 class EchoHandler(asyncore.dispatcher_with_send):
 
     def handle_read(self):
-        data = self.recv(8192)
+        data = self.recv(1024)
 
         data2 = data.decode('ascii')
 
