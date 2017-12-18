@@ -2,6 +2,7 @@ import asyncore
 import socket
 import copy
 import cx_Oracle
+import sys
 
 #Test data
 testsym = "Bob"
@@ -25,15 +26,35 @@ class EchoHandler(asyncore.dispatcher_with_send):
         data2 = data.decode('ascii')
 
         if data2:
-            if data2 == "RequestDB":
-                query = "SELECT * FROM DATABASE"
-                cursor.execute(query)
-                for row in cursor:
-                    for cell in row:
-                        cellF = str.format("{0}$",cell)
-                        self.send(cellF.encode())
-            else:
-                self.send(data2)
+            try:
+                if data2 == "RequestDB":
+                    query = "SELECT * FROM DATABASE"
+                    cursor.execute(query)
+                    for row in cursor:
+                        for cell in row:
+                            cellF = str.format("{0}$",cell)
+                            self.send(cellF.encode())
+
+                elif "Buy" in data2:
+                    data3 = data2.split(" ")
+                    query = str.format("UPDATE QUANTITY SET QUANTITY = QUANTITY -1 WHERE SYMBOL = '{0}'",data3[1])
+                    try:
+                        cursor.execute(query)
+                        connection.commit()
+                        self.send(("Success").encode())
+                    except:
+                        self.send(("Fail").encode())
+                elif "Sell" in data2:
+                    data3 = data2.split(" ")
+                    query = str.format("UPDATE QUANTITY SET QUANTITY = QUANTITY +1 WHERE SYMBOL = '{0}'",data3[1])
+                    try:
+                        cursor.execute(query)
+                        connection.commit()
+                        self.send(("Success").encode())
+                    except:
+                        self.send(("Fail").encode())
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
         else:
             pass
 
