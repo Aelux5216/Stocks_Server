@@ -1,7 +1,7 @@
 import asyncore
 import socket
-import copy
-import cx_Oracle
+import sqlite3
+from sqlite3 import Error
 import sys
 
 #Test data
@@ -10,7 +10,7 @@ testcomp = "Bobbers"
 testprice = 120.33
 testquant = 100
 
-connection = cx_Oracle.connect('SYSTEM/12345@xe') #Connect to the database
+connection = sqlite3.connect("Stocks.db") #Connect to the database
 cursor = connection.cursor() #Create instance that allows me to enter commands
 '''
 query = str.format("INSERT INTO DATABASE (SYMBOL, COMPANY, PRICE, QUANTITY) VALUES ('{0}', '{1}', '{2}', '{3}')", testsym,testcomp,testprice,testquant) #How to run a sql command
@@ -28,16 +28,18 @@ class EchoHandler(asyncore.dispatcher_with_send):
         if data2:
             try:
                 if data2 == "RequestDB":
-                    query = "SELECT * FROM DATABASE"
+                    query = "SELECT Symbol, Company, Price, Quantity FROM Stocks"
                     cursor.execute(query)
+                    stringbuilder = ""
                     for row in cursor:
                         for cell in row:
                             cellF = str.format("{0}$",cell)
-                            self.send(cellF.encode())
+                            stringbuilder = stringbuilder + cellF
+                    self.send(stringbuilder.encode())
 
                 elif "Buy" in data2:
-                    data3 = data2.split(" ")
-                    query = str.format("UPDATE QUANTITY SET QUANTITY = QUANTITY -1 WHERE SYMBOL = '{0}'",data3[1])
+                    data3 = data2.split("$")
+                    query = str.format("UPDATE Stocks SET Quantity = Quantity -1 WHERE Symbol = '{0}'",data3[1])
                     try:
                         cursor.execute(query)
                         connection.commit()
@@ -45,8 +47,8 @@ class EchoHandler(asyncore.dispatcher_with_send):
                     except:
                         self.send(("Fail").encode())
                 elif "Sell" in data2:
-                    data3 = data2.split(" ")
-                    query = str.format("UPDATE QUANTITY SET QUANTITY = QUANTITY +1 WHERE SYMBOL = '{0}'",data3[1])
+                    data3 = data2.split("$")
+                    query = str.format("UPDATE Quantity SET Quantity = Quantity +1 WHERE Symbol = '{0}'",data3[1])
                     try:
                         cursor.execute(query)
                         connection.commit()
