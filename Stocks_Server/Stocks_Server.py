@@ -72,7 +72,7 @@ class EchoServer(asyncore.dispatcher):
         pair = self.accept()
         if pair is not None:
             sock, addr = pair
-            print ("Incoming connection from {0}",repr(addr))
+            print (str.format("Incoming connection from {0}",repr(addr)))
             handler = EchoHandler(sock)
 
 server = EchoServer('localhost', 8000)
