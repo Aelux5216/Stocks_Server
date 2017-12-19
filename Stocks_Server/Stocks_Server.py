@@ -48,7 +48,7 @@ class EchoHandler(asyncore.dispatcher_with_send):
                         self.send(("Fail").encode())
                 elif "Sell" in data2:
                     data3 = data2.split("$")
-                    query = str.format("UPDATE Quantity SET Quantity = Quantity +1 WHERE Symbol = '{0}'",data3[1])
+                    query = str.format("UPDATE Stocks SET Quantity = Quantity +1 WHERE Symbol = '{0}'",data3[1])
                     try:
                         cursor.execute(query)
                         connection.commit()
