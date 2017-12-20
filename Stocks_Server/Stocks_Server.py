@@ -3,6 +3,7 @@ import socket
 import sqlite3
 from sqlite3 import Error
 import sys
+import socket
 
 #Test data
 testsym = "Bob"
@@ -18,7 +19,7 @@ cursor.execute(query) #Run the query
 connection.commit() #Save changes to the database
 '''
 
-class EchoHandler(asyncore.dispatcher_with_send):
+class Handle_Data(asyncore.dispatcher_with_send):
 
     def handle_read(self):
         data = self.recv(1024)
@@ -60,7 +61,7 @@ class EchoHandler(asyncore.dispatcher_with_send):
         else:
             pass
 
-class EchoServer(asyncore.dispatcher):
+class Server(asyncore.dispatcher):
 
     def __init__(self, host, port):
         asyncore.dispatcher.__init__(self)
@@ -75,7 +76,7 @@ class EchoServer(asyncore.dispatcher):
         if pair is not None:
             sock, addr = pair
             print (str.format("Incoming connection from {0}",repr(addr)))
-            handler = EchoHandler(sock)
+            handler = Handle_Data(sock)
 
-server = EchoServer('localhost', 8000)
+server = Server('0.0.0.0', 8000)
 asyncore.loop()
