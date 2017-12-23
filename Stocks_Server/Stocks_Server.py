@@ -150,17 +150,25 @@ class Handle_Data(asyncore.dispatcher_with_send):
                 elif "GetPurchaseHistory" in data2:
                     data3 = data2.split("$")
                     username = data3[1]
-                    query = str.format("SELECT * FROM {0}PurchaseHistory",username)
-                    connection.execute(query)
-                    
-                    stringbuilder = ""
+                    query = str.format("SELECT Description FROM {0}PurchaseHistory",username)
+                    cursor.execute(query)
 
-                    for row in cursor:
-                        for cell in row:
-                            cellF = str.format("{0}$",cell)
-                            stringbuilder = stringbuilder + cellF
+                    test = cursor.fetchone()
 
-                    self.send(stringbuilder.encode())
+                    if test == None:
+                        self.send(("None").encode())
+                    else:
+
+                        cursor.execute(query)
+
+                        stringbuilder = ""
+
+                        for row in cursor:
+                            for cell in row:
+                                cellF = str.format("{0}$",cell)
+                                stringbuilder = stringbuilder + cellF
+
+                        self.send(stringbuilder.encode())
 
                 elif "GetBalance" in data2:
                     data3 = data2.split("$")
@@ -262,7 +270,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             for row in cursor.execute(query):
                                 company = str.format("{0}",row[0])
 
-                            description = str.format("Purchased 1 stock from {0} on {1} at {2}",company,timestamp.date,timestamp.time)
+                            description = str.format("Purchased 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price)
 
                             query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks + 1 WHERE Symbol = '{1}'",username,symbol) 
                             connection.execute(query)
@@ -302,7 +310,12 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         for row in cursor.execute(query):
                             company = str.format("{0}",row[0])
 
-                        description = str.format("Sold 1 stock from {0} on {1} at {2}",company,timestamp.date,timestamp.time)
+                        query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol)
+                    
+                        for row in cursor.execute(query):
+                            price = float(row[0])
+
+                        description = str.format("Sold 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price) #Select price above
 
                         query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks - 1 WHERE Symbol = '{1}'",username,symbol)
                         cursor.execute(query)
