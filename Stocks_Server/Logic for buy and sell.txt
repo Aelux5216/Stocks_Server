@@ -1,0 +1,68 @@
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Buying Stock Logic
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+User pushes buy stock button
+
+Sends command to server with username at the end
+
+------------
+
+Server recieves command
+
+SQL Select Price from Stocks where Symbol = {smybol}
+
+store price
+
+SQL Update Usernames Set Balance = Balance - {price} where Username = {username}
+
+If queryresult < 0
+
+SQL Update Usernames Set Balance = 0
+
+Send "NoFunds" to client
+
+Else
+ 
+Takes - 1 from stock total
+
+Gets Timestamp of purchase
+
+Create Description = "Purchased 1 {stock} from {symbol} on {Date} at {Time}" 
+
+SQL update {username}OwnedStocks set OwnedStocks = OwnedStocks + 1 where symbol = {symbol} 
+
+SQL insert into {username}PurchasedHistory (Description) values ({Description})
+------------
+
+Client refreshes data to show new values
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Selling Stock Logic
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+User pushes sell stock button
+
+Sends command to server with username at the end
+
+------------
+
+Server recieves command
+
+
+SQL Select OwnedStocks from {username}OwnedStocks where Symbol = {symbol}
+
+if queryresult >0
+
+Adds + 1 to stock total
+
+Gets Timestamp of purchase
+
+Create Description = "Sold 1 {stock} from {symbol} on {Date} at {Time}" 
+
+SQL update {username}OwnedStocks set OwnedStocks = OwnedStocks - 1 where symbol = symbol 
+
+SQL insert into {username}PurchasedHistory (Description) values ({Description})
+
+else
+
+send "NoOwnedStock"

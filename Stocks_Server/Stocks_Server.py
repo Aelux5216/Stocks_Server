@@ -4,6 +4,7 @@ import sqlite3
 from sqlite3 import Error
 import sys
 import socket
+from datetime import datetime, date, time
 
 #Test data
 testsym = "Bob"
@@ -84,7 +85,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             cursor.execute(query)
                             connection.commit()
 
-                            query = str.format("CREATE TABLE {0}PurchaseHistory (PurchaseTimestamp DATETIME,Description TEXT)",username)
+                            query = str.format("CREATE TABLE {0}PurchaseHistory (Description TEXT)",username)
                             cursor.execute(query)
                             connection.commit()
 
@@ -110,7 +111,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         cursor.execute(query)
                         connection.commit()
 
-                        query = "ALTER TABLE Usernames ADD Balance DECIMAL"
+                        query = "ALTER TABLE Usernames ADD Balance DECIMAL(5,2)"
                         cursor.execute(query)
                         connection.commit()
 
@@ -130,7 +131,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         cursor.execute(query)
                         connection.commit()
 
-                        query = str.format("CREATE TABLE {0}PurchaseHistory (PurchaseTimestamp DATETIME,Description TEXT)",username)
+                        query = str.format("CREATE TABLE {0}PurchaseHistory (Description TEXT)",username)
                         cursor.execute(query)
                         connection.commit()
 
@@ -204,22 +205,125 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                 elif "BuyStock" in data2:
                     data3 = data2.split("$")
-                    query = str.format("UPDATE Stocks SET Quantity = Quantity -1 WHERE Symbol = '{0}'",data3[1])
-                    try:
-                        cursor.execute(query)
+
+                    symbol = data3[1]
+                    username = data3[2]
+                    price = 0
+                    company = ""
+
+                    query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol)
+                    
+                    for row in cursor.execute(query):
+                            price = float(row[0])
+                    
+                    query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) 
+                    
+                    for row in cursor.execute(query):
+                        currentBalance = row[0]
+
+                    queryResult = currentBalance - price 
+
+                    if queryResult < 0:
+                        query = str.format("UPDATE Usernames SET Balance = {0}",currentBalance) 
+                        connection.execute(query)
                         connection.commit()
-                        self.send(("Success").encode())
-                    except:
-                        self.send(("Fail").encode())
+
+                        self.send(("NoFunds").encode())
+                    else:
+
+                        query = str.format("SELECT Quantity FROM Stocks WHERE Symbol = '{0}'",symbol)
+
+                        for row in cursor.execute(query):
+                            queryresult2 = (row[0])
+
+                        if (queryresult2 > 0) == True:
+                            query = str.format("UPDATE Stocks SET Quantity = Quantity - 1 WHERE Symbol = '{0}'",symbol)
+                            connection.execute(query)
+                            connection.commit()
+
+                            timestamp = datetime.now()
+
+                            query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol)
+                    
+                            for row in cursor.execute(query):
+                                price = float(row[0])
+                    
+                            query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) 
+                    
+                            for row in cursor.execute(query):
+                                currentBalance = row[0]
+
+                            query = str.format("UPDATE Usernames SET Balance = Balance - {0} WHERE Username = '{1}'",price,username)
+                            connection.execute(query)
+                            connection.commit()
+
+                            query = str.format("SELECT Company FROM Stocks WHERE Symbol = '{0}'",symbol)
+                        
+                            for row in cursor.execute(query):
+                                company = str.format("{0}",row[0])
+
+                            description = str.format("Purchased 1 stock from {0} on {1} at {2}",company,timestamp.date,timestamp.time)
+
+                            query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks + 1 WHERE Symbol = '{1}'",username,symbol) 
+                            connection.execute(query)
+                            connection.commit()
+
+                            query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description)
+                            connection.execute(query)
+                            connection.commit()
+
+                            self.send(("Success").encode())
+                        else:
+                            self.send(("NoCompanyStocksOwned").encode())
+
                 elif "SellStock" in data2:
                     data3 = data2.split("$")
-                    query = str.format("UPDATE Stocks SET Quantity = Quantity +1 WHERE Symbol = '{0}'",data3[1])
-                    try:
+
+                    symbol = data3[1]
+                    username = data3[2]
+                    queryresult = 0
+                    company = ""
+                    price = 0
+
+                    query = str.format("SELECT OwnedStocks FROM {0}OwnedStocks WHERE Symbol = '{1}'",username,symbol)
+
+                    for row in cursor.execute(query):
+                        queryresult = (row[0])
+
+                    if (queryresult > 0) == True:
+                        query = str.format("UPDATE Stocks SET Quantity = Quantity + 1 WHERE Symbol = '{0}'",symbol)
+                        connection.execute(query)
+                        connection.commit()
+
+                        timestamp = datetime.now()
+
+                        query = str.format("SELECT Company FROM Stocks WHERE Symbol = '{0}'",symbol)
+
+                        for row in cursor.execute(query):
+                            company = str.format("{0}",row[0])
+
+                        description = str.format("Sold 1 stock from {0} on {1} at {2}",company,timestamp.date,timestamp.time)
+
+                        query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks - 1 WHERE Symbol = '{1}'",username,symbol)
                         cursor.execute(query)
                         connection.commit()
+
+                        query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description)
+                        cursor.execute(query)
+                        connection.commit()
+
+                        query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol)
+
+                        for row in cursor.execute(query):
+                            price = float(row[0])
+                        
+                        query = str.format("UPDATE Usernames SET Balance = Balance + {0}",price)
+                        cursor.execute(query)
+                        connection.commit()
+
                         self.send(("Success").encode())
-                    except:
-                        self.send(("Fail").encode())
+                    else:
+                        self.send(("NoOwnedStocks").encode())
             except:
                 print("Unexpected error:", sys.exc_info())
         else:
