@@ -41,15 +41,67 @@ class Handle_Data(asyncore.dispatcher_with_send):
                 elif "GetOwnedStocks" in data2:
                     data3 = data2.split("$")
                     username = data3[1]
-                    databaseExists = False
                     try:
                         query = "SELECT * FROM Usernames"
                         cursor.execute(query)
-                        databaseExists = True
-                    except:
-                        databaseExists = False
+                        #Database exists
+
+                        try:
+                            query = str.format("SELECT Username FROM Usernames WHERE Username = '{0}'",username)
+                            cursor.execute(query)
+
+                            query = str.format("SELECT OwnedStocks FROM {0}OwnedStocks ",username)
+                            cursor.execute(query)
+                            
+                            stringbuilder = ""
+
+                            for row in cursor:
+                                for cell in row:
+                                    cellF = str.format("{0}$",cell)
+                                    stringbuilder = stringbuilder + cellF
+
+                            self.send(stringbuilder.encode())
+                        except:
+                            stringbuilder = "" 
+
+                            query = str.format("INSERT INTO Usernames (Username) VALUES ('{0}')",username)
+                            cursor.execute(query)
+                            connection.commit()
+
+                            query = str.format("CREATE TABLE {0}OwnedStocks (StockID INTEGER, Symbol TEXT, Company TEXT, Price TEXT, Quantity INTEGER)",username)
+                            cursor.execute(query)
+                            connection.commit()
+
+                            query = str.format("INSERT INTO {0}OwnedStocks SELECT StockID,Symbol,Company,Price,Quantity FROM Stocks",username)
+                            cursor.execute(query)
+                            connection.commit()
                         
-                    if databaseExists == False:
+                            query = str.format("ALTER TABLE {0}OwnedStocks ADD OwnedStocks INTEGER",username)
+                            cursor.execute(query)
+                            connection.commit()
+                        
+                            query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = 0 WHERE Symbol IS NOT NULL",username)
+                            cursor.execute(query)
+                            connection.commit()
+
+                            query = str.format("CREATE TABLE {0}PurchaseHistory (PurchaseTimestamp DATETIME,Description TEXT)",username)
+                            cursor.execute(query)
+                            connection.commit()
+
+                            query = str.format("SELECT OwnedStocks FROM {0}OwnedStocks ",username)
+                            cursor.execute(query)
+
+                            stringbuilder = ""
+
+                            for row in cursor:
+                                for cell in row:
+                                    cellF = str.format("{0}$",cell)
+                                    stringbuilder = stringbuilder + cellF
+
+                            self.send(stringbuilder.encode())
+                             
+                    except:
+                        
                         query = "CREATE TABLE Usernames (Username TEXT)"
                         cursor.execute(query)
                         connection.commit()
@@ -94,23 +146,6 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                         self.send(stringbuilder.encode())
 
-                    elif databaseExists == True:
-                        
-                        query = str.format("SELECT OwnedStocks FROM {0}OwnedStocks ",username)
-                        cursor.execute(query)
-
-                        stringbuilder = ""
-
-                        for row in cursor:
-                            for cell in row:
-                                cellF = str.format("{0}$",cell)
-                                stringbuilder = stringbuilder + cellF
-
-                        self.send(stringbuilder.encode())
- 
-                    else:
-                        pass
-
                 elif "GetPurchaseHistory" in data2:
                     data3 = data2.split("$")
                     username = data3[1]
@@ -121,7 +156,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                     for row in cursor:
                         for cell in row:
-                            cellF = str.format("'{0}'$",cell)
+                            cellF = str.format("{0}$",cell)
                             stringbuilder = stringbuilder + cellF
 
                     self.send(stringbuilder.encode())
@@ -130,16 +165,18 @@ class Handle_Data(asyncore.dispatcher_with_send):
                     data3 = data2.split("$")
                     username = data3[1]
                     balance = data3[2].replace(',','')
+                    
+                    query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username)
 
-                    try:
-                        query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username)
+                    connection.execute(query)
 
-                        for row in cursor.execute(query):
-                            stringbuilder = str.format("{0}",row[0])
+                    stringbuilder = ""
 
-                        self.send(stringbuilder.encode())
+                    for row in cursor.execute(query):
+                        stringbuilder = str.format("{0}",row[0])
 
-                    except:
+                    if stringbuilder == 'None':
+                        #Balance doesnt exist
                         query = str.format("UPDATE Usernames SET Balance = {0} WHERE Username = '{1}'",balance,username,)
                         connection.execute(query)
                         connection.commit()
@@ -149,18 +186,25 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                         stringbuilder = ""
 
-                        for row in cursor:
-                            for cell in row:
-                                stringbuilder = stringbuilder + cell
+                        for row in cursor.execute(query):
+                            stringbuilder = str.format("{0}",row[0])
 
-                        index = len(stringbuilder) - 3
-                        subString = stringbuilder[:index] + ',' + stringbuilder[index:]
+                        self.send(stringbuilder.encode())
+                    else:
+                        #Balance exists
+                        query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username)
+                        connection.execute(query)
 
-                        self.send(subString.encode())
-                   
+                        stringbuilder = ""
+
+                        for row in cursor.execute(query):
+                            stringbuilder = str.format("{0}",row[0])
+
+                        self.send(stringbuilder.encode())
+
                 elif "BuyStock" in data2:
                     data3 = data2.split("$")
-                    query = str.format("UPDATE Stocks SET Quantity = Quantity -1 WHERE Symbol = ''{0}''",data3[1])
+                    query = str.format("UPDATE Stocks SET Quantity = Quantity -1 WHERE Symbol = '{0}'",data3[1])
                     try:
                         cursor.execute(query)
                         connection.commit()
