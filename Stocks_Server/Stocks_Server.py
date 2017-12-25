@@ -212,7 +212,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                     query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol) #Get the price of the stock.
                     
                     for row in cursor.execute(query):
-                            price = float(row[0]) #Convert to float so that the price is to 2 decimal places.
+                            price = float(row[0].replace(',','')) #Convert to float so that the price is to 2 decimal places.
                     
                     query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) #Select the users balance.
                     
@@ -244,7 +244,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol)
                     
                             for row in cursor.execute(query):
-                                price = float(row[0]) #Convert to 2 decimal places.
+                                price = float(row[0].replace(',','')) #Convert to 2 decimal places.
                     
                             query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) #Get the users balance.
                     
@@ -303,7 +303,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol) #Get price of the selected stock.
                     
                         for row in cursor.execute(query):
-                            price = float(row[0])
+                            price = float(row[0].replace(',',''))
 
                         description = str.format("Sold 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price) #Structure the log message.
 
@@ -318,7 +318,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol) #Get price of stock.
 
                         for row in cursor.execute(query):
-                            price = float(row[0]) #Convert to 2 decimal places.
+                            price = float(row[0].replace(',','')) #Convert to 2 decimal places.
                         
                         query = str.format("UPDATE Usernames SET Balance = Balance + {0}",price) #Update the users balance.
                         cursor.execute(query)
