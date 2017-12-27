@@ -75,7 +75,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             cursor.execute(query)
                             connection.commit()
 
-                            query = str.format("CREATE TABLE {0}PurchaseHistory (Description TEXT)",username) #Add purchase history column to store the log for each user.
+                            query = str.format("CREATE TABLE {0}PurchaseHistory (ID INTEGER, Description TEXT,PRIMARY KEY(ID))",username) #Add purchase history column to store the log for each user.
                             cursor.execute(query)
                             connection.commit()
 
@@ -121,7 +121,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         cursor.execute(query)
                         connection.commit()
 
-                        query = str.format("CREATE TABLE {0}PurchaseHistory (Description TEXT)",username) #reate Purchase History table based on the user. 
+                        query = str.format("CREATE TABLE {0}PurchaseHistory (ID INTEGER, Description TEXT,PRIMARY KEY(ID))",username) #reate Purchase History table based on the user. 
                         cursor.execute(query)
                         connection.commit()
 
@@ -167,7 +167,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                     
                     query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) #Select balance related to the username
 
-                    connection.execute(query)
+                    cursor.execute(query)
 
                     stringbuilder = ""
 
@@ -177,11 +177,11 @@ class Handle_Data(asyncore.dispatcher_with_send):
                     if stringbuilder == 'None': #Check to see if the user has a balance set.
            
                         query = str.format("UPDATE Usernames SET Balance = {0} WHERE Username = '{1}'",balance,username) #If balance doesn't exist set it to default value 20,000
-                        connection.execute(query)                                                                        #which comes from the gui of the client.
+                        cursor.execute(query)                                                                        #which comes from the gui of the client.
                         connection.commit()
                         
                         query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username) #Select the balance related to the username.
-                        connection.execute(query)
+                        cursor.execute(query)
 
                         stringbuilder = ""
 
@@ -192,7 +192,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                     else:
                         #If balance exists then send it
                         query = str.format("SELECT Balance FROM Usernames WHERE Username = '{0}'",username)
-                        connection.execute(query)
+                        cursor.execute(query)
 
                         stringbuilder = ""
 
@@ -223,7 +223,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                     if queryResult < 0: #If the users balance is less than zero after buying the stock send nofunds to client to show error.
                         query = str.format("UPDATE Usernames SET Balance = {0}",currentBalance) 
-                        connection.execute(query)
+                        cursor.execute(query)
                         connection.commit()
 
                         self.send(("NoFunds").encode())
@@ -236,7 +236,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                         if (queryresult2 > 0) == True: #If the company does have stocks avaliable.
                             query = str.format("UPDATE Stocks SET Quantity = Quantity - 1 WHERE Symbol = '{0}'",symbol) #Update the stocks table to minus 1 from the selected stock.
-                            connection.execute(query)
+                            cursor.execute(query)
                             connection.commit()
 
                             timestamp = datetime.now() #Get the time of purchase.
@@ -252,7 +252,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
                                 currentBalance = row[0]
 
                             query = str.format("UPDATE Usernames SET Balance = Balance - {0} WHERE Username = '{1}'",price,username) #Update the users balance.
-                            connection.execute(query)
+                            cursor.execute(query)
                             connection.commit()
 
                             query = str.format("SELECT Company FROM Stocks WHERE Symbol = '{0}'",symbol) #Select the company the user selected.
@@ -263,14 +263,30 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             description = str.format("Purchased 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price) #Construct the log message.
 
                             query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks + 1 WHERE Symbol = '{1}'",username,symbol) #Update the user table to add the owned stock. 
-                            connection.execute(query)
+                            cursor.execute(query)
                             connection.commit()
 
-                            query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add log message to user tables.
-                            connection.execute(query)
-                            connection.commit()
+                            query = str.format("SELECT Description FROM {0}PurchaseHistory",username)
+                            cursor.execute(query)
+                            queryResult3 = cursor.fetchall()
 
-                            self.send(("Success").encode()) #Send success message to client.
+                            if len(queryResult3) == 30: #Select purchase history check if equal to 30 and if it is run SQL queries to delete and then insert.
+                                
+                                query = str.format("DELETE FROM {0}PurchaseHistory WHERE Description IN (SELECT Description FROM {0}PurchaseHistory ORDER BY ID ASC LIMIT 1)",username)
+                                cursor.execute(query)
+                                connection.commit()
+                                
+                                query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add log message to user tables.
+                                cursor.execute(query)
+                                connection.commit()
+
+                                self.send(("Success").encode())
+                            else:
+                                query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add log message to user tables.
+                                cursor.execute(query)
+                                connection.commit()
+
+                                self.send(("Success").encode()) #Send success message to client.
                         else:
                             self.send(("NoCompanyStocksOwned").encode()) #If the company owns no stocks then send error command to client.
 
@@ -290,7 +306,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
                     if (queryresult > 0) == True: #If the user owns stocks from the company.
                         query = str.format("UPDATE Stocks SET Quantity = Quantity + 1 WHERE Symbol = '{0}'",symbol) #If the user owns stocks from the company.
-                        connection.execute(query)
+                        cursor.execute(query)
                         connection.commit()
 
                         timestamp = datetime.now() #Get time that the stock was sold.
@@ -311,20 +327,35 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         cursor.execute(query)
                         connection.commit()
 
-                        query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add the log to purchase history table.
+                        query = str.format("SELECT Description FROM {0}PurchaseHistory",username)
                         cursor.execute(query)
-                        connection.commit()
+                        queryResult4 = cursor.fetchall()
 
-                        query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol) #Get price of stock.
+                        if len(queryResult4) == 30: #Select purchase history check if equal to 30 and if it is run SQL queries to delete and then insert.
+                            query = str.format("DELETE FROM {0}PurchaseHistory WHERE Description IN (SELECT Description FROM {0}PurchaseHistory ORDER BY ID ASC LIMIT 1)",username)
+                            cursor.execute(query)
+                            connection.commit()
+                                
+                            query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add log message to user tables.
+                            cursor.execute(query)
+                            connection.commit()
 
-                        for row in cursor.execute(query):
-                            price = float(row[0].replace(',','')) #Convert to 2 decimal places.
+                            self.send(("Success").encode())
+                        else:
+                            query = str.format("INSERT INTO {0}PurchaseHistory (Description) VALUES ('{1}')",username,description) #Add the log to purchase history table.
+                            cursor.execute(query)
+                            connection.commit()
+
+                            query = str.format("SELECT Price FROM Stocks WHERE Symbol = '{0}'",symbol) #Get price of stock.
+
+                            for row in cursor.execute(query):
+                                price = float(row[0].replace(',','')) #Convert to 2 decimal places.
                         
-                        query = str.format("UPDATE Usernames SET Balance = Balance + {0}",price) #Update the users balance.
-                        cursor.execute(query)
-                        connection.commit()
+                            query = str.format("UPDATE Usernames SET Balance = Balance + {0}",price) #Update the users balance.
+                            cursor.execute(query)
+                            connection.commit()
 
-                        self.send(("Success").encode()) #Send the success message to the client.
+                            self.send(("Success").encode()) #Send the success message to the client.
                     else:
                         self.send(("NoOwnedStocks").encode()) #If the company doesn't have any avaliable stocks send error message to client.
             except:
