@@ -260,7 +260,9 @@ class Handle_Data(asyncore.dispatcher_with_send):
                             for row in cursor.execute(query):
                                 company = str.format("{0}",row[0])
 
-                            description = str.format("Purchased 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price) #Construct the log message.
+                            timeTimestamp = str.format("{0}:{1}:{2}",timestamp.time().hour,timestamp.time().minute,timestamp.time().second) #Format the time so milliseconds aren't included.
+
+                            description = str.format("Purchased 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timeTimestamp,price) #Construct the log message.
 
                             query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks + 1 WHERE Symbol = '{1}'",username,symbol) #Update the user table to add the owned stock. 
                             cursor.execute(query)
@@ -321,7 +323,9 @@ class Handle_Data(asyncore.dispatcher_with_send):
                         for row in cursor.execute(query):
                             price = float(row[0].replace(',',''))
 
-                        description = str.format("Sold 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timestamp.time(),price) #Structure the log message.
+                        timeTimestamp = str.format("{0}:{1}:{2}",timestamp.time().hour,timestamp.time().minute,timestamp.time().second) #Format the time so milliseconds aren't included.
+
+                        description = str.format("Sold 1 stock from {0} on {1} at {2} for £{3}",company,timestamp.date(),timeTimestamp,price) #Structure the log message.
 
                         query = str.format("UPDATE {0}OwnedStocks SET OwnedStocks = OwnedStocks - 1 WHERE Symbol = '{1}'",username,symbol) #Remove a stock from the users table.
                         cursor.execute(query)
