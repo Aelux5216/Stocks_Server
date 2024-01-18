@@ -6,7 +6,7 @@ import sys
 import socket
 from datetime import datetime, date, time
 
-connection = sqlite3.connect("Stocks.db") #Connect to the database
+connection = sqlite3.connect("Stocks.db") #Connect to the database 
 cursor = connection.cursor() #Create instance that allows me to enter commands
 
 class Handle_Data(asyncore.dispatcher_with_send):
@@ -16,7 +16,7 @@ class Handle_Data(asyncore.dispatcher_with_send):
 
         data2 = data.decode('ascii') #Decode the data recieved from ascii(since it was sent from c# code it will be in ascii).
 
-        if data2: #If there is any data run a command.
+        if data2: #If there is any data run a command. 
             try:
                 if data2 == "RequestDB": #This command selects all the columns from my Stocks table.
                     query = "SELECT Symbol, Company, Price, Quantity FROM Stocks"
